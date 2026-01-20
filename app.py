@@ -99,8 +99,8 @@ if uploaded_file is not None:
             else:
                 st.success(f"Automatic region found! (Best R²: {best_r2:.4f})")
 
-       else:
-            # --- MANUAL LOGIC (UPDATED: Select by Current X-Axis) ---
+        else:
+           # --- MANUAL LOGIC (UPDATED: Select by Current X-Axis) ---
             st.write("Enter the Current Density range to fit (e.g., 1.5 to 5.0).")
             st.info("Tip: Enter values in the same units as your Excel file (e.g., mA or A).")
             
