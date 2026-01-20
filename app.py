@@ -99,25 +99,38 @@ if uploaded_file is not None:
             else:
                 st.success(f"Automatic region found! (Best R²: {best_r2:.4f})")
 
-        else:
-            # --- MANUAL LOGIC (Replicating your input dialog) ---
+       else:
+            # --- MANUAL LOGIC (UPDATED: Select by Current X-Axis) ---
+            st.write("Enter the Current Density range to fit (e.g., 1.5 to 5.0).")
+            st.info("Tip: Enter values in the same units as your Excel file (e.g., mA or A).")
+            
             col1, col2 = st.columns(2)
             with col1:
-                v_start = st.number_input("Start Voltage (V)", value=-0.50)
+                # We default to 1.0 just to have a non-zero starting value
+                j_start = st.number_input("Start Current Density", value=1.5)
             with col2:
-                v_end = st.number_input("End Voltage (V)", value=-0.75)
+                j_end = st.number_input("End Current Density", value=5.0)
             
-            # Filter indices based on voltage range
-            # MATLAB: indices = find(V_raw <= V_start_fit & V_raw >= V_end_fit);
-            # We handle the min/max order automatically so user input order doesn't matter
-            v_low = min(v_start, v_end)
-            v_high = max(v_start, v_end)
-            
-            mask = (data['V_raw'] >= v_low) & (data['V_raw'] <= v_high)
-            best_indices = data[mask].index.tolist()
-            
-            if len(best_indices) == 0:
-                st.warning("No data found in this voltage range.")
+            # Validation: Log(0) is impossible, so we block it
+            if j_start == 0 or j_end == 0:
+                st.error("Current cannot be zero for Tafel analysis (Log scale).")
+                best_indices = []
+            else:
+                # 1. Convert user inputs to Log scale (to match the X-axis)
+                # We use abs() to handle cases where users might type negative current
+                log_start = np.log10(abs(j_start))
+                log_end = np.log10(abs(j_end))
+                
+                # 2. Sort min/max so it doesn't matter which order you type them
+                l_low = min(log_start, log_end)
+                l_high = max(log_start, log_end)
+                
+                # 3. Filter data based on Log Current (X-axis) instead of Voltage
+                mask = (data['log_J'] >= l_low) & (data['log_J'] <= l_high)
+                best_indices = data[mask].index.tolist()
+                
+                if len(best_indices) == 0:
+                    st.warning(f"No data found between {j_start} and {j_end}. Check if your file uses A or mA.")
 
         # --- 5. CALCULATIONS & PLOTTING ---
         if len(best_indices) > 0:
